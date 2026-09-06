@@ -133,7 +133,7 @@
       <div id="status-msg"></div>
       <div id="input-row">
         <button class="icon-btn" id="attach-btn" title="Add knowledge">➕</button>
-        <input type="file" id="file-input" accept=".txt">
+        <input type="file" id="file-input" accept=".txt,.pdf,.docx">
         <textarea id="text-input" placeholder="Ask anything" rows="1"></textarea>
         <button class="icon-btn" id="mic-btn" title="Voice">🎙️</button>
         <button class="icon-btn" id="send-btn" title="Send">➤</button>
@@ -178,7 +178,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_twrph4YiT03yDiqWqisY_Q_MxWPDAO1
 const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 let currentUser = null;
-let authMode = 'signin'; // or 'signup'
+let authMode = 'signin';
 
 function getAnonId() {
   let id = localStorage.getItem('anon_id');
@@ -210,7 +210,6 @@ function updateUserUI() {
   }
 }
 
-// ---------- Auth modal ----------
 const authModal = document.getElementById('auth-modal');
 const authStatus = document.getElementById('auth-status');
 const authForm = document.getElementById('auth-form');
@@ -302,7 +301,6 @@ authSubmitBtn.onclick = async () => {
   }
 };
 
-// ---------- Chat app logic ----------
 let currentChatId = null;
 let chatsMeta = {};
 
@@ -490,7 +488,6 @@ document.getElementById('library-btn').onclick = async () => {
 
 document.getElementById('close-library').onclick = () => { libraryModal.style.display = 'none'; };
 
-// ---------- App init ----------
 async function initApp() {
   currentChatId = null;
   await loadChatList();

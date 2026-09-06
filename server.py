@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 import logging
+import io
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -10,8 +11,9 @@ from supabase import create_client
 from fastembed import TextEmbedding
 from groq import Groq
 from gtts import gTTS
-import io
 import base64
+from pypdf import PdfReader
+from docx import Document
 
 load_dotenv()
 
@@ -83,10 +85,8 @@ Question: {question}"""
         return "Maaf kijiye, is waqt jawab generate nahi kar pa raha. Dobara try karein."
 
 def get_speech_version(display_text):
-    """Sirf voice ke liye: Roman Urdu ko native Urdu script mein badal deta hai taake pronunciation sahi ho."""
     if has_urdu_script(display_text):
         return display_text
-
     try:
         response = groq_client.chat.completions.create(
             model="openai/gpt-oss-20b",
@@ -142,6 +142,37 @@ def get_chat_history(chat_id):
 def save_message(chat_id, role, content):
     supabase.table("chat_messages").insert({"chat_id": chat_id, "role": role, "content": content}).execute()
 
+def extract_text_from_file(filename, raw_bytes):
+    """Filename ke extension ke hisaab se text nikalta hai. None return karta hai agar unsupported ho."""
+    lower_name = filename.lower()
+
+    if lower_name.endswith(".txt"):
+        for encoding in ["utf-8", "utf-16", "windows-1252", "latin-1"]:
+            try:
+                return raw_bytes.decode(encoding)
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+        return None
+
+    if lower_name.endswith(".pdf"):
+        try:
+            reader = PdfReader(io.BytesIO(raw_bytes))
+            text_parts = [page.extract_text() or "" for page in reader.pages]
+            return "\n\n".join(text_parts)
+        except Exception as e:
+            logger.error(f"PDF extraction failed: {e}")
+            return None
+
+    if lower_name.endswith(".docx"):
+        try:
+            doc = Document(io.BytesIO(raw_bytes))
+            return "\n\n".join(p.text for p in doc.paragraphs)
+        except Exception as e:
+            logger.error(f"DOCX extraction failed: {e}")
+            return None
+
+    return None
+
 # ---------- API Routes ----------
 
 @app.get("/")
@@ -196,11 +227,21 @@ def get_messages(chat_id: str):
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        if not file.filename.endswith(".txt"):
-            return JSONResponse({"error": "Sirf .txt files allowed hain."}, status_code=400)
-        content = (await file.read()).decode("utf-8")
+        allowed_extensions = (".txt", ".pdf", ".docx")
+        if not file.filename.lower().endswith(allowed_extensions):
+            return JSONResponse(
+                {"error": "Sirf .txt, .pdf, ya .docx files allowed hain."},
+                status_code=400
+            )
+
+        raw_bytes = await file.read()
+        content = extract_text_from_file(file.filename, raw_bytes)
+
+        if content is None:
+            return JSONResponse({"error": "File padhi nahi ja saki."}, status_code=400)
         if not content.strip():
-            return JSONResponse({"error": "File khali hai."}, status_code=400)
+            return JSONResponse({"error": "File mein koi text nahi mila."}, status_code=400)
+
         num_chunks = ingest_document(file.filename, content)
         return {"chunks_added": num_chunks}
     except Exception as e:
