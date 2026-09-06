@@ -424,20 +424,57 @@ document.getElementById('new-chat-item').onclick = createNewChat;
 
 const fileInput = document.getElementById('file-input');
 document.getElementById('attach-btn').onclick = () => fileInput.click();
+
 fileInput.onchange = async () => {
   const file = fileInput.files[0];
   if (!file) return;
-  statusMsg.textContent = 'Uploading & processing "' + file.name + '"...';
+
+  if (!currentChatId) await createNewChat();
+
+  welcomeEl.style.display = 'none';
+  appendMessageToDOM('user', '📎 ' + file.name);
+
+  const thinkingRow = document.createElement('div');
+  thinkingRow.className = 'msg-row assistant thinking-row';
+  thinkingRow.innerHTML = '<div class="bubble-assistant thinking">Reading file...</div>';
+  messagesEl.appendChild(thinkingRow);
+  document.getElementById('chat-area').scrollTop = 999999;
+
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: formData });
-  const data = await res.json();
-  if (data.error) {
-    statusMsg.textContent = data.error;
-  } else {
-    statusMsg.textContent = 'Added ' + data.chunks_added + ' chunks from ' + file.name;
+  const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+  const uploadData = await uploadRes.json();
+
+  thinkingRow.remove();
+
+  if (uploadData.error) {
+    appendMessageToDOM('assistant', 'Maaf kijiye, file parh nahi paya: ' + uploadData.error);
+    fileInput.value = '';
+    return;
   }
-  setTimeout(() => statusMsg.textContent = '', 4000);
+
+  const ackThinking = document.createElement('div');
+  ackThinking.className = 'msg-row assistant thinking-row';
+  ackThinking.innerHTML = '<div class="bubble-assistant thinking">Thinking...</div>';
+  messagesEl.appendChild(ackThinking);
+  document.getElementById('chat-area').scrollTop = 999999;
+
+  const chatFormData = new FormData();
+  chatFormData.append('chat_id', currentChatId);
+  chatFormData.append('message', `I've just uploaded a file called "${file.name}". Please briefly confirm you've read it and are ready to answer questions about it.`);
+  chatFormData.append('want_voice', false);
+
+  const chatRes = await fetch('/api/chat', { method: 'POST', body: chatFormData });
+  const chatData = await chatRes.json();
+
+  ackThinking.remove();
+  appendMessageToDOM('assistant', chatData.answer, chatData.audio_base64);
+
+  if (chatsMeta[currentChatId] === 'New Chat') {
+    await loadChatList();
+  }
+
+  fileInput.value = '';
 };
 
 const micBtn = document.getElementById('mic-btn');
