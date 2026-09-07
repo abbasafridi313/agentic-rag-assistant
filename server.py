@@ -40,7 +40,7 @@ print("Ready!")
 def has_urdu_script(text):
     return bool(re.search(r'[\u0600-\u06FF]', text))
 
-def retrieve_chunks(question, match_count=3):
+def retrieve_chunks(question, match_count=2):
     try:
         question_embedding = list(embed_model.embed([question]))[0].tolist()
         response = supabase.rpc("match_chunks", {
