@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agentic RAG Assistant</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -100,9 +101,74 @@
   #auth-cancel-x { text-align: right; cursor: pointer; color: #8e8e8e; margin-bottom: 6px; }
   #auth-status { font-size: 0.85rem; margin-bottom: 10px; min-height: 18px; }
   #confirm-notice { display: none; text-align: center; color: #22c55e; font-size: 0.9rem; }
+
+  /* Mobile responsive fixes */
+  @media (max-width: 768px) {
+    #sidebar {
+      position: fixed;
+      left: -280px;
+      top: 0;
+      bottom: 0;
+      z-index: 200;
+      transition: left 0.2s ease;
+      width: 260px;
+    }
+    #sidebar.open {
+      left: 0;
+    }
+    #main {
+      width: 100%;
+    }
+    #mobile-menu-btn {
+      display: flex !important;
+    }
+    #input-bar {
+      padding: 12px;
+    }
+    #chat-inner {
+      padding: 0 12px;
+    }
+    .bubble-user, .bubble-assistant {
+      max-width: 88%;
+    }
+    #welcome {
+      font-size: 1.5rem;
+      padding: 0 20px;
+    }
+  }
+  #mobile-menu-btn {
+    display: none;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 201;
+    background: #2f2f2f;
+    border: none;
+    color: #ececec;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 199;
+  }
+  #sidebar-overlay.show {
+    display: block;
+  }
 </style>
 </head>
 <body>
+
+<button id="mobile-menu-btn">☰</button>
+<div id="sidebar-overlay"></div>
 
 <div id="sidebar">
   <div id="sidebar-header">🧠 Agentic RAG</div>
@@ -342,6 +408,8 @@ async function switchChat(id) {
     data.messages.forEach(m => appendMessageToDOM(m.role, m.content));
   }
   document.getElementById('chat-area').scrollTop = 999999;
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
 }
 
 async function createNewChat() {
@@ -354,6 +422,8 @@ async function createNewChat() {
   renderChatList();
   messagesEl.innerHTML = '';
   welcomeEl.style.display = 'block';
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
 }
 
 function appendMessageToDOM(role, content, audioB64) {
@@ -524,6 +594,19 @@ document.getElementById('library-btn').onclick = async () => {
 };
 
 document.getElementById('close-library').onclick = () => { libraryModal.style.display = 'none'; };
+
+const menuBtn = document.getElementById('mobile-menu-btn');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+
+menuBtn.onclick = () => {
+  sidebar.classList.add('open');
+  overlay.classList.add('show');
+};
+overlay.onclick = () => {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+};
 
 async function initApp() {
   currentChatId = null;
