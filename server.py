@@ -78,7 +78,7 @@ Question: {question}"""
     messages.append({"role": "user", "content": user_prompt})
 
     try:
-        response = groq_client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages)
+        response = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=messages)
         return response.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Groq API failed: {e}")
@@ -89,7 +89,7 @@ def get_speech_version(display_text):
         return display_text
     try:
         response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
             messages=[{
                 "role": "user",
                 "content": f"""If the following text is written in Roman Urdu (Urdu words spelled with English letters), transliterate it into native Urdu script (اردو رسم الخط), preserving the exact meaning. If it's already in English, return it completely unchanged. Return ONLY the resulting text, nothing else, no explanation.
