@@ -66,7 +66,7 @@ CRITICAL RULE: Detect the exact language AND script the user used in their quest
 - If he wrote in native Urdu script (اردو), reply ONLY in native Urdu script.
 - If he wrote in any other language, reply in that same language.
 
-Use the provided context if relevant, otherwise use your own general knowledge. Keep it natural, warm, and not robotic. Return ONLY the answer text — no labels, no extra formatting, no separators."""
+Use the provided context if relevant, otherwise use your own general knowledge. Answer general knowledge questions (science, history, coding, math, advice, etc.) confidently and in detail using your own knowledge, just like a knowledgeable friend would — don't hold back just because it's not in the uploaded documents. Keep it natural, warm, and not robotic. Return ONLY the answer text — no labels, no extra formatting, no separators."""
 
     user_prompt = f"""Context:
 {context}
@@ -78,7 +78,7 @@ Question: {question}"""
     messages.append({"role": "user", "content": user_prompt})
 
     try:
-        response = groq_client.chat.completions.create(model="openai/gpt-oss-20b", messages=messages)
+        response = groq_client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages)
         return response.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Groq API failed: {e}")
@@ -89,7 +89,7 @@ def get_speech_version(display_text):
         return display_text
     try:
         response = groq_client.chat.completions.create(
-            model="openai/gpt-oss-20b",
+            model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "user",
                 "content": f"""If the following text is written in Roman Urdu (Urdu words spelled with English letters), transliterate it into native Urdu script (اردو رسم الخط), preserving the exact meaning. If it's already in English, return it completely unchanged. Return ONLY the resulting text, nothing else, no explanation.
@@ -143,7 +143,6 @@ def save_message(chat_id, role, content):
     supabase.table("chat_messages").insert({"chat_id": chat_id, "role": role, "content": content}).execute()
 
 def extract_text_from_file(filename, raw_bytes):
-    """Filename ke extension ke hisaab se text nikalta hai. None return karta hai agar unsupported ho."""
     lower_name = filename.lower()
 
     if lower_name.endswith(".txt"):
