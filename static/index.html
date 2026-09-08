@@ -9,7 +9,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
   html, body { height: 100%; }
-  body { background: #0f0f0f; color: #ececec; display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+  body { background: #0f0f0f; color: #ececec; display: flex; height: var(--app-height, 100vh); overflow: hidden; }
 
   #sidebar { width: 260px; background: #171717; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; padding: 14px 8px; }
   #sidebar-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px 18px 8px; font-size: 1.05rem; font-weight: 600; }
@@ -93,7 +93,6 @@
   .thinking { color: #9ca3af; font-style: italic; }
   audio { margin-top: 8px; width: 260px; }
 
-  /* Input bar: normal flow (not absolute) so it naturally sits above mobile nav buttons */
   #input-bar {
     flex-shrink: 0;
     display: flex;
@@ -309,6 +308,16 @@
 </div>
 
 <script>
+function setAppHeight() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', vh + 'px');
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', setAppHeight);
+}
+
 const SUPABASE_URL = "https://ghzbcppezdcjjvnyicak.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_twrph4YiT03yDiqWqisY_Q_MxWPDAO1";
 const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
