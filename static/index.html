@@ -8,7 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-  body { background: #0f0f0f; color: #ececec; display: flex; height: 100vh; overflow: hidden; }
+  html, body { height: 100%; }
+  body { background: #0f0f0f; color: #ececec; display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
   #sidebar { width: 260px; background: #171717; border-right: 1px solid #2d2d2d; display: flex; flex-direction: column; padding: 14px 8px; }
   #sidebar-header { display: flex; align-items: center; gap: 8px; padding: 6px 8px 18px 8px; font-size: 1.05rem; font-weight: 600; }
@@ -19,9 +20,59 @@
   #static-menu { display: flex; flex-direction: column; gap: 1px; margin-bottom: 10px; }
   #recents-label { color: #8e8e8e; font-size: 0.75rem; font-weight: 600; padding: 14px 10px 6px 10px; letter-spacing: 0.3px; }
   #chat-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
-  .chat-item { padding: 9px 10px; border-radius: 8px; cursor: pointer; font-size: 0.88rem; color: #d1d1d1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .chat-item:hover { background: #2a2a2a; }
-  .chat-item.active { background: #2a2a2a; color: #fff; }
+
+  .chat-item-row { position: relative; display: flex; align-items: center; border-radius: 8px; }
+  .chat-item-row:hover { background: #2a2a2a; }
+  .chat-item-row.active { background: #2a2a2a; }
+  .chat-item {
+    flex: 1;
+    padding: 9px 10px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: #d1d1d1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chat-item-row.active .chat-item { color: #fff; }
+  .chat-menu-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .chat-menu-btn:hover { background: #3a3a3a; color: #fff; }
+  .chat-dropdown {
+    position: absolute;
+    right: 4px;
+    top: 100%;
+    background: #232323;
+    border: 1px solid #3d3d3d;
+    border-radius: 8px;
+    z-index: 50;
+    min-width: 130px;
+    overflow: hidden;
+    display: none;
+  }
+  .chat-dropdown.show { display: block; }
+  .chat-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #ececec;
+    padding: 9px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .chat-dropdown button:hover { background: #333; }
+  .chat-dropdown button.danger { color: #ef4444; }
+
   #sidebar-footer { display: flex; align-items: center; gap: 10px; padding: 10px; border-top: 1px solid #2d2d2d; margin-top: 8px; cursor: pointer; }
   #sidebar-footer:hover { background: #2a2a2a; border-radius: 8px; }
   #avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #22c55e, #16a34a); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
@@ -29,8 +80,8 @@
   #user-name { font-size: 0.85rem; color: #ececec; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #user-plan { font-size: 0.75rem; color: #8e8e8e; }
 
-  #main { flex: 1; display: flex; flex-direction: column; position: relative; }
-  #chat-area { flex: 1; overflow-y: auto; padding: 24px 0 140px 0; display: flex; flex-direction: column; align-items: center; }
+  #main { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+  #chat-area { flex: 1; overflow-y: auto; padding: 24px 0; display: flex; flex-direction: column; align-items: center; }
   #chat-inner { width: 100%; max-width: 780px; padding: 0 20px; }
   #welcome { text-align: center; font-size: 2rem; font-weight: 600; margin-top: 15vh; color: #ececec; }
 
@@ -42,11 +93,46 @@
   .thinking { color: #9ca3af; font-style: italic; }
   audio { margin-top: 8px; width: 260px; }
 
-  #input-bar { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; padding: 20px; background: linear-gradient(to top, #0f0f0f 60%, transparent); }
-  #input-row { display: flex; align-items: center; gap: 10px; background: #2f2f2f; border: 1px solid #3d3d3d; border-radius: 28px; padding: 8px 10px 8px 16px; width: 100%; max-width: 780px; }
-  #text-input { flex: 1; background: transparent; border: none; outline: none; color: #ececec; font-size: 1rem; resize: none; max-height: 120px; padding: 8px 0; }
+  /* Input bar: normal flow (not absolute) so it naturally sits above mobile nav buttons */
+  #input-bar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    padding: 14px 20px;
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    background: #0f0f0f;
+  }
+  #input-box {
+    width: 100%;
+    max-width: 780px;
+    background: #2f2f2f;
+    border: 1px solid #3d3d3d;
+    border-radius: 24px;
+    padding: 10px 14px;
+  }
+  #text-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #ececec;
+    font-size: 1rem;
+    resize: none;
+    max-height: 120px;
+    padding: 4px 2px 10px 2px;
+  }
   #text-input::placeholder { color: #8e8e8e; }
-  .icon-btn { background: #3a3a3a; border: none; color: #ececec; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  #input-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #input-controls-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon-btn { background: #3a3a3a; border: none; color: #ececec; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0; }
   .icon-btn:hover { background: #4a4a4a; }
   #mic-btn.recording { background: linear-gradient(135deg, #ef4444, #dc2626); animation: pulse 1.2s infinite; }
   #send-btn { background: #ececec; color: #0f0f0f; }
@@ -102,7 +188,6 @@
   #auth-status { font-size: 0.85rem; margin-bottom: 10px; min-height: 18px; }
   #confirm-notice { display: none; text-align: center; color: #22c55e; font-size: 0.9rem; }
 
-  /* Mobile responsive fixes */
   @media (max-width: 768px) {
     #sidebar {
       position: fixed;
@@ -113,31 +198,13 @@
       transition: left 0.2s ease;
       width: 260px;
     }
-    #sidebar.open {
-      left: 0;
-    }
-    #main {
-      width: 100%;
-    }
-    #mobile-menu-btn {
-      display: flex !important;
-    }
-    #mobile-menu-btn.hide-btn {
-      display: none !important;
-    }
-    #input-bar {
-      padding: 12px;
-    }
-    #chat-inner {
-      padding: 0 12px;
-    }
-    .bubble-user, .bubble-assistant {
-      max-width: 88%;
-    }
-    #welcome {
-      font-size: 1.5rem;
-      padding: 0 20px;
-    }
+    #sidebar.open { left: 0; }
+    #main { width: 100%; }
+    #mobile-menu-btn { display: flex !important; }
+    #mobile-menu-btn.hide-btn { display: none !important; }
+    #chat-inner { padding: 0 12px; }
+    .bubble-user, .bubble-assistant { max-width: 88%; }
+    #welcome { font-size: 1.5rem; padding: 0 20px; }
   }
   #mobile-menu-btn {
     display: none;
@@ -163,9 +230,7 @@
     background: rgba(0,0,0,0.5);
     z-index: 199;
   }
-  #sidebar-overlay.show {
-    display: block;
-  }
+  #sidebar-overlay.show { display: block; }
 </style>
 </head>
 <body>
@@ -198,14 +263,16 @@
     </div>
   </div>
   <div id="input-bar">
-    <div style="width:100%; max-width:780px;">
+    <div id="input-box">
       <div id="status-msg"></div>
-      <div id="input-row">
+      <textarea id="text-input" placeholder="Ask anything" rows="1"></textarea>
+      <div id="input-controls-row">
         <button class="icon-btn" id="attach-btn" title="Add knowledge">➕</button>
         <input type="file" id="file-input" accept=".txt,.pdf,.docx">
-        <textarea id="text-input" placeholder="Ask anything" rows="1"></textarea>
-        <button class="icon-btn" id="mic-btn" title="Voice">🎙️</button>
-        <button class="icon-btn" id="send-btn" title="Send">➤</button>
+        <div id="input-controls-right">
+          <button class="icon-btn" id="mic-btn" title="Voice">🎙️</button>
+          <button class="icon-btn" id="send-btn" title="Send">➤</button>
+        </div>
       </div>
     </div>
   </div>
@@ -249,7 +316,6 @@ const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KE
 let currentUser = null;
 let authMode = 'signin';
 
-// Different welcome messages, picked randomly for each new chat (like ChatGPT/Claude)
 const WELCOME_MESSAGES = [
   "What's on your mind today?",
   "Ready when you are.",
@@ -258,7 +324,6 @@ const WELCOME_MESSAGES = [
   "Ask me anything.",
   "Let's get started.",
 ];
-
 function randomWelcomeMessage() {
   return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
 }
@@ -271,7 +336,6 @@ function getAnonId() {
   }
   return id;
 }
-
 function currentIdentityId() {
   return currentUser ? currentUser.id : getAnonId();
 }
@@ -393,16 +457,82 @@ const welcomeEl = document.getElementById('welcome');
 const textInput = document.getElementById('text-input');
 const statusMsg = document.getElementById('status-msg');
 
+function closeAllChatDropdowns() {
+  document.querySelectorAll('.chat-dropdown').forEach(d => d.classList.remove('show'));
+}
+
 function renderChatList() {
   chatListEl.innerHTML = '';
   Object.entries(chatsMeta).forEach(([id, title]) => {
-    const div = document.createElement('div');
-    div.className = 'chat-item' + (id === currentChatId ? ' active' : '');
-    div.textContent = title;
-    div.onclick = () => switchChat(id);
-    chatListEl.appendChild(div);
+    const row = document.createElement('div');
+    row.className = 'chat-item-row' + (id === currentChatId ? ' active' : '');
+
+    const item = document.createElement('div');
+    item.className = 'chat-item';
+    item.textContent = title;
+    item.onclick = () => switchChat(id);
+
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'chat-menu-btn';
+    menuBtn.textContent = '⋯';
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      const wasOpen = dropdown.classList.contains('show');
+      closeAllChatDropdowns();
+      if (!wasOpen) dropdown.classList.add('show');
+    };
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'chat-dropdown';
+
+    const renameBtn = document.createElement('button');
+    renameBtn.textContent = '✏️ Rename';
+    renameBtn.onclick = async (e) => {
+      e.stopPropagation();
+      closeAllChatDropdowns();
+      const newTitle = prompt('Rename chat:', title);
+      if (newTitle && newTitle.trim()) {
+        const formData = new FormData();
+        formData.append('title', newTitle.trim());
+        await fetch('/api/chats/' + id, { method: 'PATCH', body: formData });
+        chatsMeta[id] = newTitle.trim();
+        renderChatList();
+      }
+    };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'danger';
+    deleteBtn.textContent = '🗑️ Delete';
+    deleteBtn.onclick = async (e) => {
+      e.stopPropagation();
+      closeAllChatDropdowns();
+      if (confirm('Delete this chat? This cannot be undone.')) {
+        await fetch('/api/chats/' + id, { method: 'DELETE' });
+        delete chatsMeta[id];
+        if (id === currentChatId) {
+          const remaining = Object.keys(chatsMeta);
+          if (remaining.length > 0) {
+            await switchChat(remaining[0]);
+          } else {
+            await createNewChat();
+          }
+        } else {
+          renderChatList();
+        }
+      }
+    };
+
+    dropdown.appendChild(renameBtn);
+    dropdown.appendChild(deleteBtn);
+
+    row.appendChild(item);
+    row.appendChild(menuBtn);
+    row.appendChild(dropdown);
+    chatListEl.appendChild(row);
   });
 }
+
+document.addEventListener('click', closeAllChatDropdowns);
 
 async function loadChatList() {
   const res = await fetch('/api/chats?anon_id=' + currentIdentityId());
@@ -626,7 +756,6 @@ function closeSidebar() {
   overlay.classList.remove('show');
   menuBtn.classList.remove('hide-btn');
 }
-
 menuBtn.onclick = openSidebar;
 overlay.onclick = closeSidebar;
 

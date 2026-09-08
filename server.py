@@ -225,6 +225,25 @@ def list_chats(anon_id: str):
 def get_messages(chat_id: str):
     return {"messages": get_chat_history(chat_id)}
 
+@app.patch("/api/chats/{chat_id}")
+async def rename_chat(chat_id: str, title: str = Form(...)):
+    try:
+        supabase.table("user_chats").update({"title": title}).eq("id", chat_id).execute()
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"rename_chat failed: {e}")
+        return JSONResponse({"success": False}, status_code=500)
+
+@app.delete("/api/chats/{chat_id}")
+def delete_chat(chat_id: str):
+    try:
+        supabase.table("chat_messages").delete().eq("chat_id", chat_id).execute()
+        supabase.table("user_chats").delete().eq("id", chat_id).execute()
+        return {"deleted": True}
+    except Exception as e:
+        logger.error(f"delete_chat failed: {e}")
+        return JSONResponse({"deleted": False}, status_code=500)
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
