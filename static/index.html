@@ -122,6 +122,9 @@
     #mobile-menu-btn {
       display: flex !important;
     }
+    #mobile-menu-btn.hide-btn {
+      display: none !important;
+    }
     #input-bar {
       padding: 12px;
     }
@@ -190,7 +193,7 @@
 <div id="main">
   <div id="chat-area">
     <div id="chat-inner">
-      <div id="welcome">What's on your mind today?</div>
+      <div id="welcome"></div>
       <div id="messages"></div>
     </div>
   </div>
@@ -245,6 +248,20 @@ const supabaseAuth = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KE
 
 let currentUser = null;
 let authMode = 'signin';
+
+// Different welcome messages, picked randomly for each new chat (like ChatGPT/Claude)
+const WELCOME_MESSAGES = [
+  "What's on your mind today?",
+  "Ready when you are.",
+  "How can I help, Abbas?",
+  "What are we working on today?",
+  "Ask me anything.",
+  "Let's get started.",
+];
+
+function randomWelcomeMessage() {
+  return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
+}
 
 function getAnonId() {
   let id = localStorage.getItem('anon_id');
@@ -402,14 +419,14 @@ async function switchChat(id) {
   const data = await res.json();
   messagesEl.innerHTML = '';
   if (data.messages.length === 0) {
+    welcomeEl.textContent = randomWelcomeMessage();
     welcomeEl.style.display = 'block';
   } else {
     welcomeEl.style.display = 'none';
     data.messages.forEach(m => appendMessageToDOM(m.role, m.content));
   }
   document.getElementById('chat-area').scrollTop = 999999;
-  sidebar.classList.remove('open');
-  overlay.classList.remove('show');
+  closeSidebar();
 }
 
 async function createNewChat() {
@@ -421,9 +438,9 @@ async function createNewChat() {
   chatsMeta[currentChatId] = 'New Chat';
   renderChatList();
   messagesEl.innerHTML = '';
+  welcomeEl.textContent = randomWelcomeMessage();
   welcomeEl.style.display = 'block';
-  sidebar.classList.remove('open');
-  overlay.classList.remove('show');
+  closeSidebar();
 }
 
 function appendMessageToDOM(role, content, audioB64) {
@@ -599,14 +616,19 @@ const menuBtn = document.getElementById('mobile-menu-btn');
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('sidebar-overlay');
 
-menuBtn.onclick = () => {
+function openSidebar() {
   sidebar.classList.add('open');
   overlay.classList.add('show');
-};
-overlay.onclick = () => {
+  menuBtn.classList.add('hide-btn');
+}
+function closeSidebar() {
   sidebar.classList.remove('open');
   overlay.classList.remove('show');
-};
+  menuBtn.classList.remove('hide-btn');
+}
+
+menuBtn.onclick = openSidebar;
+overlay.onclick = closeSidebar;
 
 async function initApp() {
   currentChatId = null;
