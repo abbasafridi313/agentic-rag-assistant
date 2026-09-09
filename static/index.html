@@ -615,6 +615,7 @@ async function sendMessage(text, wantVoice) {
   formData.append('chat_id', currentChatId);
   formData.append('message', text);
   formData.append('want_voice', wantVoice);
+  formData.append('owner_id', currentIdentityId());
 
   const res = await fetch('/api/chat', { method: 'POST', body: formData });
   const data = await res.json();
@@ -662,6 +663,7 @@ fileInput.onchange = async () => {
 
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('owner_id', currentIdentityId());
   const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
   const uploadData = await uploadRes.json();
 
@@ -683,6 +685,7 @@ fileInput.onchange = async () => {
   chatFormData.append('chat_id', currentChatId);
   chatFormData.append('message', `I've just uploaded a file called "${file.name}". Please briefly confirm you've read it and are ready to answer questions about it.`);
   chatFormData.append('want_voice', false);
+  chatFormData.append('owner_id', currentIdentityId());
 
   const chatRes = await fetch('/api/chat', { method: 'POST', body: chatFormData });
   const chatData = await chatRes.json();
@@ -724,7 +727,7 @@ const libraryList = document.getElementById('library-list');
 document.getElementById('library-btn').onclick = async () => {
   libraryModal.style.display = 'flex';
   libraryList.innerHTML = 'Loading...';
-  const res = await fetch('/api/documents');
+  const res = await fetch('/api/documents?owner_id=' + currentIdentityId());
   const data = await res.json();
   libraryList.innerHTML = '';
   if (data.documents.length === 0) {

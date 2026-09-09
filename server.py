@@ -40,13 +40,14 @@ print("Ready!")
 def has_urdu_script(text):
     return bool(re.search(r'[\u0600-\u06FF]', text))
 
-def retrieve_chunks(question, match_count=2):
+def retrieve_chunks(question, owner_id, match_count=2):
     try:
         question_embedding = list(embed_model.embed([question]))[0].tolist()
         response = supabase.rpc("match_chunks", {
             "query_embedding": question_embedding,
             "match_threshold": 0.3,
-            "match_count": match_count
+            "match_count": match_count,
+            "owner": owner_id
         }).execute()
         return response.data
     except Exception as e:
@@ -124,8 +125,12 @@ def chunk_text(text, chunk_size=500, overlap=50):
         start = end - overlap
     return chunks
 
-def ingest_document(title, content):
-    doc_response = supabase.table("documents").insert({"title": title, "content": content}).execute()
+def ingest_document(title, content, owner_id):
+    doc_response = supabase.table("documents").insert({
+        "title": title,
+        "content": content,
+        "owner_id": owner_id
+    }).execute()
     document_id = doc_response.data[0]["id"]
     chunks = chunk_text(content)
     embeddings = list(embed_model.embed(chunks))
@@ -181,13 +186,13 @@ def serve_index():
     return FileResponse("static/index.html")
 
 @app.post("/api/chat")
-async def chat(chat_id: str = Form(...), message: str = Form(...), want_voice: bool = Form(False)):
+async def chat(chat_id: str = Form(...), message: str = Form(...), owner_id: str = Form(...), want_voice: bool = Form(False)):
     if not message.strip():
         return JSONResponse({"answer": "Kuch to likho ya bolo!", "audio_base64": None})
 
     try:
         history = get_chat_history(chat_id)
-        chunks = retrieve_chunks(message)
+        chunks = retrieve_chunks(message, owner_id)
         display_text = generate_answer(message, chunks, history)
 
         save_message(chat_id, "user", message)
@@ -245,7 +250,7 @@ def delete_chat(chat_id: str):
         return JSONResponse({"deleted": False}, status_code=500)
 
 @app.post("/api/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), owner_id: str = Form(...)):
     try:
         allowed_extensions = (".txt", ".pdf", ".docx")
         if not file.filename.lower().endswith(allowed_extensions):
@@ -262,16 +267,16 @@ async def upload_file(file: UploadFile = File(...)):
         if not content.strip():
             return JSONResponse({"error": "File mein koi text nahi mila."}, status_code=400)
 
-        num_chunks = ingest_document(file.filename, content)
+        num_chunks = ingest_document(file.filename, content, owner_id)
         return {"chunks_added": num_chunks}
     except Exception as e:
         logger.error(f"/api/upload failed: {e}")
         return JSONResponse({"error": "File process nahi ho saki."}, status_code=500)
 
 @app.get("/api/documents")
-def list_documents():
+def list_documents(owner_id: str):
     try:
-        response = supabase.table("documents").select("id, title, created_at").order("created_at", desc=True).execute()
+        response = supabase.table("documents").select("id, title, created_at").eq("owner_id", owner_id).order("created_at", desc=True).execute()
         docs = response.data
         for doc in docs:
             chunk_count = supabase.table("chunks").select("id", count="exact").eq("document_id", doc["id"]).execute()
