@@ -142,9 +142,9 @@ def ingest_document(title, content, owner_id):
         }).execute()
     return len(chunks)
 
-def get_chat_history(chat_id):
-    response = supabase.table("chat_messages").select("role, content").eq("chat_id", chat_id).order("created_at").execute()
-    return response.data
+def get_chat_history(chat_id, limit=6):
+    response = supabase.table("chat_messages").select("role, content").eq("chat_id", chat_id).order("created_at", desc=True).limit(limit).execute()
+    return list(reversed(response.data))
 
 def save_message(chat_id, role, content):
     supabase.table("chat_messages").insert({"chat_id": chat_id, "role": role, "content": content}).execute()
@@ -228,7 +228,8 @@ def list_chats(anon_id: str):
 
 @app.get("/api/chats/{chat_id}/messages")
 def get_messages(chat_id: str):
-    return {"messages": get_chat_history(chat_id)}
+    response = supabase.table("chat_messages").select("role, content").eq("chat_id", chat_id).order("created_at").execute()
+    return {"messages": response.data}
 
 @app.patch("/api/chats/{chat_id}")
 async def rename_chat(chat_id: str, title: str = Form(...)):
