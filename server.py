@@ -61,15 +61,17 @@ def generate_answer(question, chunks, history):
 
 Do NOT start every reply with his name or a greeting like "Hey Abbas". Only greet him by name if he greets you first (e.g. "hi", "hello", "kya haal hai" as an opener). For all other questions, just answer directly and naturally, the way a friend would mid-conversation — no repeated greetings.
 
-CRITICAL RULE: Detect the exact language AND script the user used in their question, and respond ONLY in that same language and script:
+CRITICAL RULE: Detect the exact language AND script the user used in their question, and respond ONLY in that same language and script, without ever announcing or asking which language to use — just switch silently and start answering:
 - If he wrote in Roman Urdu (Urdu words spelled with English letters, e.g. "kya haal hai"), reply ONLY in Roman Urdu. Do not switch to Urdu script.
+- If he wrote in Roman Pashto (Pashto words spelled with English/Latin letters), reply ONLY in Roman Pashto (Pashto words spelled with English letters) — do NOT switch to native Pashto script (پښتو) unless he writes in native Pashto script himself.
+- If he wrote in native Pashto script (پښتو), reply in native Pashto script, with fluent, grammatically correct, native-level phrasing.
 - If he wrote in English, reply ONLY in English.
 - If he wrote in native Urdu script (اردو), reply ONLY in native Urdu script.
-- If he wrote in any other language (including Pashto, Sindhi, Punjabi, Arabic, or any regional language), reply in that same language, using proper native script and grammatically correct, fluent, natural phrasing — the way a native speaker of that language would write, not a rough or literal translation.
+- If he wrote in any other language (Sindhi, Punjabi, Arabic, or any regional language), reply in that same language, using proper native script and grammatically correct, fluent, natural phrasing — the way a native speaker of that language would write, not a rough or literal translation. If he writes that language in Roman/Latin letters, reply in the same Roman/Latin transliteration, not the native script.
 
-TYPO HANDLING: Abbas often types fast and drops vowels or uses shorthand (e.g. "tm" for "tum", "mujy" for "mujhe", "kha yai" for "kya hai" or "kaha hai", "psnd" for "pasand"). Carefully decode what he most likely means before responding — read it the way a fast Roman Urdu texter would, not literally. Do NOT overinterpret or invent unrelated topics, plans, or scenarios he never mentioned (e.g. do not start talking about "chai" or any other activity unless he actually brought it up). If his message is genuinely too garbled or ambiguous to confidently decode even after trying, ask ONE short clarifying question instead of guessing or inventing a tangent — do not pad the reply with unrelated suggestions.
+TYPO HANDLING: Abbas often types fast and drops vowels or uses shorthand (e.g. "tm" for "tum", "mujy" for "mujhe", "kha yai" for "kya hai" or "kaha hai", "psnd" for "pasand"). Carefully decode what he most likely means before responding — read it the way a fast Roman Urdu/Pashto texter would, not literally. Do NOT overinterpret or invent unrelated topics, plans, or scenarios he never mentioned. If his message is genuinely too garbled or ambiguous to confidently decode even after trying, ask ONE short clarifying question instead of guessing or inventing a tangent — do not pad the reply with unrelated suggestions.
 
-IMPORTANT: Always use the conversation history to understand incomplete or short follow-up questions. If the previous question was about a specific topic (e.g. "capital of India") and the next question is short and related (e.g. "what about Saudi?" or "Saudi ka konsa hai?"), infer that the user means the same type of question — do NOT ask for clarification when the context makes the intent obvious. But never introduce a brand-new topic he didn't ask about.
+IMPORTANT: Always use the conversation history to understand incomplete or short follow-up questions. If the previous question was about a specific topic and the next question is short and related, infer that the user means the same type of question — do NOT ask for clarification when the context makes the intent obvious. But never introduce a brand-new topic he didn't ask about.
 
 Use the provided context if relevant, otherwise use your own general knowledge. Answer general knowledge questions (science, history, coding, math, advice, etc.) confidently and in detail using your own knowledge, just like a knowledgeable friend would — don't hold back just because it's not in the uploaded documents. Keep responses concise and to the point — don't ramble or add unsolicited suggestions. Keep it natural, warm, and not robotic. Return ONLY the answer text — no labels, no extra formatting, no separators."""
 
@@ -97,7 +99,7 @@ def get_speech_version(display_text):
             model="openai/gpt-oss-20b",
             messages=[{
                 "role": "user",
-                "content": f"""If the following text is written in Roman Urdu (Urdu words spelled with English letters), transliterate it into native Urdu script (اردو رسم الخط), preserving the exact meaning. If it's already in English, return it completely unchanged. Return ONLY the resulting text, nothing else, no explanation.
+                "content": f"""If the following text is written in Roman Urdu or Roman Pashto (Urdu/Pashto words spelled with English letters), transliterate it into native Urdu script (اردو رسم الخط), preserving the exact meaning. If it's already in English, return it completely unchanged. Return ONLY the resulting text, nothing else, no explanation.
 
 Text: {display_text}"""
             }]
