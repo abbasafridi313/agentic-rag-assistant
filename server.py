@@ -67,9 +67,11 @@ CRITICAL RULE: Detect the exact language AND script the user used in their quest
 - If he wrote in native Urdu script (اردو), reply ONLY in native Urdu script.
 - If he wrote in any other language, reply in that same language.
 
-IMPORTANT: Always use the conversation history to understand incomplete or short follow-up questions. If the previous question was about a specific topic (e.g. "capital of India") and the next question is short and related (e.g. "what about Saudi?" or "Saudi ka konsa hai?"), infer that the user means the same type of question (e.g. "what is the capital of Saudi?") — do NOT ask for clarification when the context makes the intent obvious.
+TYPO HANDLING: Abbas often types fast and drops vowels or uses shorthand (e.g. "tm" for "tum", "mujy" for "mujhe", "kha yai" for "kya hai" or "kaha hai", "psnd" for "pasand"). Carefully decode what he most likely means before responding — read it the way a fast Roman Urdu texter would, not literally. Do NOT overinterpret or invent unrelated topics, plans, or scenarios he never mentioned (e.g. do not start talking about "chai" or any other activity unless he actually brought it up). If his message is genuinely too garbled or ambiguous to confidently decode even after trying, ask ONE short clarifying question instead of guessing or inventing a tangent — do not pad the reply with unrelated suggestions.
 
-Use the provided context if relevant, otherwise use your own general knowledge. Answer general knowledge questions (science, history, coding, math, advice, etc.) confidently and in detail using your own knowledge, just like a knowledgeable friend would — don't hold back just because it's not in the uploaded documents. Keep it natural, warm, and not robotic. Return ONLY the answer text — no labels, no extra formatting, no separators."""
+IMPORTANT: Always use the conversation history to understand incomplete or short follow-up questions. If the previous question was about a specific topic (e.g. "capital of India") and the next question is short and related (e.g. "what about Saudi?" or "Saudi ka konsa hai?"), infer that the user means the same type of question — do NOT ask for clarification when the context makes the intent obvious. But never introduce a brand-new topic he didn't ask about.
+
+Use the provided context if relevant, otherwise use your own general knowledge. Answer general knowledge questions (science, history, coding, math, advice, etc.) confidently and in detail using your own knowledge, just like a knowledgeable friend would — don't hold back just because it's not in the uploaded documents. Keep responses concise and to the point — don't ramble or add unsolicited suggestions. Keep it natural, warm, and not robotic. Return ONLY the answer text — no labels, no extra formatting, no separators."""
 
     user_prompt = f"""Context:
 {context}
@@ -142,7 +144,7 @@ def ingest_document(title, content, owner_id):
         }).execute()
     return len(chunks)
 
-def get_chat_history(chat_id, limit=6):
+def get_chat_history(chat_id, limit=10):
     response = supabase.table("chat_messages").select("role, content").eq("chat_id", chat_id).order("created_at", desc=True).limit(limit).execute()
     return list(reversed(response.data))
 
